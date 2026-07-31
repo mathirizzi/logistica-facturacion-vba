@@ -1,39 +1,41 @@
 # Manual de Requerimientos
 
-## Logistica Facturacion VBA
+## Facturacion Logistica VBA
 
-## 1. Objetivo del sistema
+# 1. Objetivo
 
-Desarrollar una herramienta que permita automatizar el cálculo de facturación de servicios logísticos a partir de información exportada desde un sistema WMS.
+Desarrollar una herramienta que permita automatizar el proceso de facturación de servicios logísticos a partir de información exportada desde un WMS.
 
 El sistema deberá calcular automáticamente:
 
-* Estadías de pallets.
+* Estadías.
 * Movimientos de ingreso (IN).
-* Movimientos de salida completa (OUT).
-* Movimientos de picking (PK).
-* Generar un detalle diario de facturación.
-* Detectar inconsistencias mediante una hoja de incidencias.
+* Movimientos de salida (OUT).
+* Movimientos de Picking (PK).
+* Generar reportes de respaldo.
+* Detectar inconsistencias en la información procesada.
 
-El objetivo principal es reducir el trabajo manual de cálculo de facturación y mejorar la trazabilidad de los importes generados.
+La herramienta tendrá como objetivo minimizar el trabajo manual, reducir errores y facilitar la trazabilidad de cada concepto facturado.
 
 ---
 
 # 2. Alcance
 
-El sistema trabajará con tres fuentes principales de información:
-
-1. Stock inicial del período a facturar.
-2. Movimientos realizados durante el período.
-3. Stock final del período.
+El sistema procesará exclusivamente información correspondiente a un período de facturación determinado.
 
 Ejemplo:
 
-Para facturar julio:
+Período:
 
-* Stock inicial: cierre físico del 30/06.
-* Movimientos: movimientos realizados del 01/07 al 31/07.
-* Stock final: cierre físico del 31/07.
+01/07/2026 al 31/07/2026
+
+Archivos necesarios:
+
+* Stock físico al cierre del día anterior al período (30/06).
+* Movimientos del período (01/07 al 31/07).
+* Stock físico al cierre del último día del período (31/07).
+
+Todos los archivos serán exportados previamente desde el WMS.
 
 ---
 
@@ -41,234 +43,201 @@ Para facturar julio:
 
 ## 3.1 Pallet
 
-Un pallet representa una unidad física almacenada en el depósito.
+Unidad física almacenada en depósito.
 
-Cada pallet posee:
+Características:
 
-* Identificador único.
-* Cliente asociado.
-* Cantidad de bultos.
-* Estado (activo/finalizado).
+* Posee un identificador único.
+* Pertenece a un único cliente.
+* Contiene una cantidad determinada de bultos.
+* Puede permanecer activo durante varios períodos de facturación.
 
-Un pallet no vuelve a utilizar el mismo identificador luego de su baja.
+Un identificador de pallet nunca vuelve a reutilizarse.
+
+---
+
+## 3.2 Bulto
+
+Unidad utilizada para calcular Picking.
+
+Los movimientos parciales se facturan por cantidad de bultos retirados.
+
+---
+
+## 3.3 Orden de procesamiento
+
+Agrupador operativo utilizado por el WMS.
+
+Cada movimiento de ingreso o salida pertenece a una orden.
+
+La orden se utilizará únicamente para la trazabilidad de movimientos.
+
+Las estadías NO se relacionan con órdenes.
 
 ---
 
 # 4. Reglas de facturación
 
-## 4.1 Estadía
+## 4.1 Estadías
 
-La estadía representa el cobro por ocupación física del espacio dentro del depósito.
+Las estadías representan la ocupación física del depósito.
 
 Reglas:
 
-* Cada pallet genera una estadía por cada día calendario que permanece físicamente en el depósito.
-* La estadía se cobra por día completo, independientemente de la cantidad de horas que haya permanecido.
+* Se factura una estadía por pallet y por día calendario.
+* Si un pallet permanece una parte del día, igualmente genera una estadía completa.
 * Si un pallet ingresa y sale el mismo día, genera una estadía.
-* Si un pallet sale durante el día, la estadía de ese día igualmente se factura.
-* Un pallet continúa generando estadía mientras tenga existencia física, aunque posea solamente un bulto restante.
-
-Ejemplo:
-
-Pallet P001:
-
-Ingreso: 01/07
-Salida completa: 05/07
-
-Genera estadía:
-
-01/07 - 02/07 - 03/07 - 04/07 - 05/07
-
-Total: 5 estadías.
+* Mientras exista físicamente, aunque posea un solo bulto, continúa generando estadía.
+* La estadía se calcula independientemente de las órdenes de procesamiento.
 
 ---
 
 ## 4.2 Movimiento IN
 
-El movimiento IN representa el ingreso físico de un pallet al depósito.
+Representa el ingreso físico de un pallet.
 
 Reglas:
 
-* Cada pallet ingresado genera 1 movimiento IN.
-* El IN solamente se factura si ocurre dentro del período facturado.
-* Un pallet que ya existía antes del período no vuelve a generar IN.
-* Genera una estadia a partir de la fecha de ingreso.
+* Cada pallet ingresado genera un único IN.
+* Sólo se factura si ocurre dentro del período facturado.
 
 ---
 
-## 4.3 Movimiento PK (Picking)
+## 4.3 Movimiento PK
 
-El picking representa una extracción parcial de mercadería de un pallet.
+Representa una extracción parcial de mercadería.
 
 Reglas:
 
-* Cada bulto retirado parcialmente genera 1 PK.
-* El PK se factura por cantidad de bultos retirados.
-* Un pallet que continúa existiendo luego del movimiento genera PK.
+* Se factura por cantidad de bultos retirados.
+* Sólo aplica cuando el pallet continúa existiendo luego del movimiento.
 
 Ejemplo:
 
-Pallet con 30 bultos:
-
-Día 1:
-Salida de 10 bultos.
+Salida parcial de 18 bultos.
 
 Resultado:
-10 PK.
 
-Saldo:
-20 bultos.
+18 PK.
 
 ---
 
 ## 4.4 Movimiento OUT
 
-El OUT representa la salida completa de un pallet.
+Representa la salida definitiva del pallet.
 
 Reglas:
 
-* Se genera cuando un movimiento deja el pallet sin existencia.
-* Se factura 1 OUT por pallet finalizado.
-* La última salida de un pallet genera OUT y no PK.
-* Genera el descuento de 1 estadia a partir del siguiente dia de la fecha de movimiento
+* Se factura un único OUT por pallet.
+* El OUT ocurre cuando el saldo del pallet llega a cero.
 
-Ejemplo:
+La última extracción nunca genera PK.
 
-Pallet con 30 bultos:
-
-Día 1:
-Salida 10 → 10 PK
-
-Día 2:
-Salida 20 → 1 OUT
-
-Resultado:
-
-PK: 10
-OUT: 1
+Genera únicamente OUT.
 
 ---
 
-# 5. Datos de entrada
+# 5. Movimientos procesados
 
-## 5.1 Stock inicial
+Los movimientos utilizados serán exportados desde el WMS.
 
-Información necesaria:
+Se considera que dichos movimientos ya fueron filtrados previamente.
 
-* Cliente.
-* ID de pallet.
-* Cantidad de bultos.
+No deberán incluir:
 
-Representa el estado físico al inicio del período.
-
----
-
-## 5.2 Movimientos
-
-Información necesaria:
-
-* Fecha.
-* Cliente.
-* ID de pallet.
-* Numero de Orden de Procesamiento asociada al movimiento
-* Tipo de movimiento.
-* Cantidad de bultos.
-
-Los movimientos cargados deberán estar previamente filtrados desde el WMS.
-No se deben tomar en cuenta movimientos de ajuste/inventario ya que no generan IN/OUT/PK.
-Los movimientos cargados deben ser netamente movimientos operativos.
+* Ajustes de inventario.
+* Movimientos administrativos.
+* Movimientos internos no facturables.
 
 ---
 
-## 5.3 Stock final
+# 6. Ajustes de inventario
 
-Información necesaria:
+Los ajustes no serán utilizados para calcular facturación.
 
-* Cliente.
-* ID de pallet.
-* Cantidad de bultos.
+Sin embargo, podrán provocar diferencias entre:
 
-Representa el estado físico al cierre del período.
+* Stock inicial.
+* Movimientos.
+* Stock final.
 
----
+Estas diferencias deberán informarse como incidencias.
 
-# 6. Hoja de incidencias
-
-El sistema deberá detectar situaciones que requieran revisión manual.
-
-Ejemplos:
-
-## Pallet sin ingreso conocido
-
-Un pallet aparece en stock final pero:
-
-* No estaba en stock inicial.
-* No posee movimiento IN dentro del período.
-
-Posible causa:
-
-* Ajuste de inventario.
-
----
-
-## Pallet desaparecido
-
-Un pallet estaba en stock inicial pero:
-
-* No aparece en stock final.
-* No posee movimiento OUT.
-
-Posible causa:
-
-* Ajuste de inventario.
-
----
-
-## Diferencias de saldo
-
-Ejemplos:
-
-* Salida superior al saldo disponible.
-* Pallet con cantidades inconsistentes.
+Nunca deberán corregirse automáticamente.
 
 ---
 
 # 7. Salidas del sistema
 
-El sistema deberá generar:
+El sistema deberá generar cuatro reportes.
 
-## Detalle diario
+## 7.1 Resumen de Facturación
+
+Agrupado por cliente.
+
+Información:
+
+* Estadías.
+* IN.
+* PK.
+* OUT.
+
+Este reporte será utilizado para emitir la factura.
+
+---
+
+## 7.2 Detalle de Estadías
+
+Agrupado por fecha y cliente.
 
 Información:
 
 * Fecha.
 * Cliente.
-* Estadías.
-* Numero de Orden de Procesamiento asociada al movimiento
+* Cantidad de estadías.
+
+Este reporte permitirá justificar el cálculo de ocupación del depósito.
+
+---
+
+## 7.3 Detalle de Movimientos
+
+Agrupado por fecha, cliente y orden.
+
+Información:
+
+* Fecha.
+* Cliente.
+* Orden.
 * IN.
 * PK.
 * OUT.
 
----
-
-## Resumen de facturación
-
-Información agrupada por cliente:
-
-* Total estadías.
-* Total IN.
-* Total PK.
-* Total OUT.
+Este reporte permitirá justificar cada movimiento facturado.
 
 ---
 
+## 7.4 Incidencias
+
+Listado de inconsistencias detectadas durante el procesamiento.
+
+Ejemplos:
+
+* Pallet sin ingreso conocido.
+* Pallet desaparecido sin OUT.
+* Diferencias de saldo.
+* Cliente inconsistente.
+* PK superior al saldo disponible.
+
+---
 
 # 8. Criterios de diseño
 
 El sistema deberá:
 
-* No modificar los datos originales importados.
-* Mantener trazabilidad del cálculo.
-* Informar inconsistencias en lugar de corregirlas automáticamente.
-* Separar lógica de cálculo y presentación.
-* Permitir futuras migraciones a otros lenguajes o sistemas.
+* Trabajar completamente en memoria durante el procesamiento.
+* No modificar los datos importados.
+* Mantener separación entre lógica de cálculo y presentación.
+* Registrar todas las incidencias detectadas.
+* Permitir futuras ampliaciones sin modificar el algoritmo principal.
+* Facilitar una futura migración a otro lenguaje de programación.
