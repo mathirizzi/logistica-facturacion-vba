@@ -1,7 +1,7 @@
 Option Explicit
 
-Public Sub ConsolidarDatos()
+Public Sub ConsolidarFacturacion()
 
-    Debug.Print "Consolidando datos..."
+    Debug.Print "Consolidando facturacion..."
 
 End Sub

@@ -2,50 +2,36 @@ Option Explicit
 
 Public Sub EjecutarMotorFacturacion()
 
-    Debug.Print "======================================"
-    Debug.Print " INICIO MOTOR DE FACTURACION"
-    Debug.Print "======================================"
+    Debug.Print "================================"
+    Debug.Print " INICIO MOTOR FACTURACION"
+    Debug.Print "================================"
 
-    ' Inicialización
     Call InicializarSistema
 
-    ' Configuración
     Call CargarConfiguracion
 
-    ' Datos base
-    Call CargarTarifas
-    Call CargarMovimientos
+    Call ImportarDatos
 
-    ' Control previo
     Call ValidarDatos
+
     Call PrepararDatos
 
-    ' Proceso de facturación
     Call FacturarRecepciones
-    Call FacturarAlmacenaje
+
     Call FacturarPicking
+
     Call FacturarDespachos
+
     Call FacturarEstadias
-    Call FacturarServicios
 
-    ' Resultado
-    Call ConsolidarFactura
+    Call ConsolidarFacturacion
 
-    ' Salida
-    Call ExportarResultado
+    Call ExportarDatos
 
-    ' Cierre
-    Call FinalizarProceso
+    Call FinalizarSistema
 
-
-    Debug.Print "======================================"
-    Debug.Print " FIN MOTOR DE FACTURACION"
-    Debug.Print "======================================"
+    Debug.Print "================================"
+    Debug.Print " FIN MOTOR FACTURACION"
+    Debug.Print "================================"
 
 End Sub
-
-
-
-
-
-
