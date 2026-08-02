@@ -15,6 +15,7 @@ Public ModoDebug As Boolean
 ' NOMBRE DE LAS HOJAS
 '==========================================
 
+'Nombre físico de hojas Excel
 Public Const HOJA_STOCK_INICIAL As String = "Stock Inicial"
 
 Public Const HOJA_STOCK_FINAL As String = "Stock Final"
@@ -22,6 +23,8 @@ Public Const HOJA_STOCK_FINAL As String = "Stock Final"
 Public Const HOJA_MOVIMIENTOS As String = "Movimientos"
 
 Public Const HOJA_RESULTADO As String = "Resultado"
+
+'Clave interna de estructuras
 
 Public Const MAP_STOCK_INICIAL As String = "STOCK_INICIAL"
 
