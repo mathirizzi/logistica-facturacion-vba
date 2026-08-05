@@ -82,6 +82,8 @@ Public Sub CargarConfiguracion()
 
     Call ObtenerHojas
 
+    Call ValidarConfiguracion
+
     Set dictColumnas = CreateObject("Scripting.Dictionary")
 
     Call CargarDiccionarioColumnas
@@ -101,6 +103,28 @@ Private Sub ObtenerHojas()
     Set wsMovimientos = ThisWorkbook.Worksheets(HOJA_MOVIMIENTOS)
 
     Set wsStockFinal = ThisWorkbook.Worksheets(HOJA_STOCK_FINAL)
+
+End Sub
+
+
+'=========================================================
+' Valida que exista cada hoja necesaria para el funcionamiento del proceso
+' Genera un error en cada caso
+'=========================================================
+
+Private Sub ValidarConfiguracion()
+
+    If wsStockInicial Is Nothing Then
+        Err.Raise vbObjectError + 1002, , "No se encontró la hoja '" & HOJA_STOCK_INICIAL & "'."
+    End If
+
+    If wsMovimientos Is Nothing Then
+        Err.Raise vbObjectError + 1003, , "No se encontró la hoja '" & HOJA_MOVIMIENTOS & "'."
+    End If
+
+    If wsStockFinal Is Nothing Then
+        Err.Raise vbObjectError + 1004, , "No se encontró la hoja '" & HOJA_STOCK_FINAL & "'."
+    End If
 
 End Sub
 
